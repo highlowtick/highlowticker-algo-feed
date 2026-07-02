@@ -518,31 +518,15 @@
       "type": "object"
     },
     "TapeEventKind": {
-      "description": "Which transition triggered this `TapeEvent`.",
-      "oneOf": [
-        {
-          "enum": [
-            "new_high",
-            "new_low",
-            "new_high_and_low"
-          ],
-          "type": "string"
-        },
-        {
-          "description": "Intraday last-price update for symbols requested by algo clients (stop/target).",
-          "enum": [
-            "price_update"
-          ],
-          "type": "string"
-        },
-        {
-          "description": "Periodic market push-pull + breadth bar; emitted only while a client is subscribed via `ALGO_WEB_SUMMARY`.",
-          "enum": [
-            "market_summary"
-          ],
-          "type": "string"
-        }
-      ]
+      "description": "Which transition triggered this `TapeEvent`.\n\n- `price_update`: intraday last-price update for symbols requested by algo clients via `ALGO_WEB_WATCH` (stop/target tracking). - `market_summary`: periodic market push-pull + breadth bar, emitted only while a client is subscribed via `ALGO_WEB_SUMMARY`.",
+      "enum": [
+        "new_high",
+        "new_low",
+        "new_high_and_low",
+        "price_update",
+        "market_summary"
+      ],
+      "type": "string"
     },
     "TradeSide": {
       "description": "BUY or SELL. Matches JSON string `\"BUY\"` / `\"SELL\"` (case-sensitive).",
