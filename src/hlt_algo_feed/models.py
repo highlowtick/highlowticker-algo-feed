@@ -3,26 +3,19 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, Field, RootModel, conint
+from pydantic import BaseModel, Field, conint
 
 
 class AlgoEvent1(BaseModel):
-    algo_id: Optional[str] = None
-    data: Optional[Any] = None
-    message: Optional[str] = None
-    symbol: Optional[str] = None
-    tag: str
-    timestamp: str
-    type: Literal['ALGO_CUSTOM']
+    symbols: list[str]
+    type: Literal['SUBSCRIBE_WATCH']
 
 
-class AlgoEvent(RootModel[AlgoEvent1]):
-    root: AlgoEvent1 = Field(
-        ...,
-        description='Tagged by the JSON `"type"` field. Only `ALGO_CUSTOM` is defined; any other (or unknown) type fails deserialization — the server logs it at `debug` and continues.',
-    )
+class AlgoEvent2(BaseModel):
+    enabled: Optional[bool] = True
+    type: Literal['SUBSCRIBE_SUMMARY']
 
 
 class TapeEvent(BaseModel):
@@ -38,7 +31,7 @@ class TapeEvent(BaseModel):
         'new_high', 'new_low', 'new_high_and_low', 'price_update', 'market_summary'
     ] = Field(
         ...,
-        description='Which transition triggered this `TapeEvent`.\n\n- `price_update`: intraday last-price update for symbols requested by algo clients via `ALGO_WEB_WATCH` (stop/target tracking). - `market_summary`: periodic market push-pull + breadth bar, emitted only while a client is subscribed via `ALGO_WEB_SUMMARY`.',
+        description='Which transition triggered this `TapeEvent`.\n\n- `price_update`: intraday last-price update for symbols requested by algo clients via `SUBSCRIBE_WATCH` (stop/target tracking). - `market_summary`: periodic market push-pull + breadth bar, emitted only while a client is subscribed via `SUBSCRIBE_SUMMARY`.',
     )
     high_count: conint(ge=0) = Field(
         ..., description='Per-symbol cumulative new-high count this session.'
@@ -103,4 +96,7 @@ class TapeEvent(BaseModel):
 
 class HighlowtickerAlgoFeedWireProtocol(BaseModel):
     egress: Optional[TapeEvent] = None
-    ingress: Optional[AlgoEvent] = None
+    ingress: Optional[Union[AlgoEvent1, AlgoEvent2]] = Field(
+        None,
+        description='Ingress control frames (client → HLT), tagged by the JSON `"type"` field. These two subscribe commands are the only messages HLT acts on; any other (or unknown) type fails deserialization — the server logs it at `debug` and keeps the connection open.',
+    )

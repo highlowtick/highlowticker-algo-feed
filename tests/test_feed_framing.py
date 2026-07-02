@@ -1,15 +1,16 @@
 from hlt_algo_feed.feed import build_watch, build_summary
 
 
-def test_build_watch_uppercases_and_wraps():
+def test_build_watch_uppercases():
     msg = build_watch(["aapl", "Msft"])
-    assert msg["type"] == "ALGO_CUSTOM"
-    assert msg["tag"] == "ALGO_WEB_WATCH"
-    assert msg["data"]["symbols"] == ["AAPL", "MSFT"]
-    assert "timestamp" in msg
+    assert msg["type"] == "SUBSCRIBE_WATCH"
+    assert msg["symbols"] == ["AAPL", "MSFT"]
+
+
+def test_build_watch_empty_list():
+    assert build_watch([]) == {"type": "SUBSCRIBE_WATCH", "symbols": []}
 
 
 def test_build_summary_toggle():
-    assert build_summary(True)["data"]["enabled"] is True
-    assert build_summary(False)["data"]["enabled"] is False
-    assert build_summary(True)["tag"] == "ALGO_WEB_SUMMARY"
+    assert build_summary(True) == {"type": "SUBSCRIBE_SUMMARY", "enabled": True}
+    assert build_summary(False) == {"type": "SUBSCRIBE_SUMMARY", "enabled": False}

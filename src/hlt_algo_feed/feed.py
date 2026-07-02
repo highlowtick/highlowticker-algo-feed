@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from typing import Optional
 
 import websockets
@@ -10,10 +9,6 @@ import websockets
 from .models import TapeEvent
 
 DEFAULT_URL = "ws://127.0.0.1:7412"
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def parse_frame(raw: str) -> Optional[TapeEvent]:
@@ -25,23 +20,13 @@ def parse_frame(raw: str) -> Optional[TapeEvent]:
 
 
 def build_watch(symbols: list[str]) -> dict:
-    """Build the ALGO_WEB_WATCH frame that replaces the price_update watch set."""
-    return {
-        "type": "ALGO_CUSTOM",
-        "tag": "ALGO_WEB_WATCH",
-        "timestamp": _now_iso(),
-        "data": {"symbols": [s.upper() for s in symbols]},
-    }
+    """Build the SUBSCRIBE_WATCH frame that replaces the price_update watch set."""
+    return {"type": "SUBSCRIBE_WATCH", "symbols": [s.upper() for s in symbols]}
 
 
 def build_summary(enabled: bool = True) -> dict:
-    """Build the ALGO_WEB_SUMMARY frame that toggles the market_summary stream."""
-    return {
-        "type": "ALGO_CUSTOM",
-        "tag": "ALGO_WEB_SUMMARY",
-        "timestamp": _now_iso(),
-        "data": {"enabled": enabled},
-    }
+    """Build the SUBSCRIBE_SUMMARY frame that toggles the market_summary stream."""
+    return {"type": "SUBSCRIBE_SUMMARY", "enabled": enabled}
 
 
 class AlgoFeed:
