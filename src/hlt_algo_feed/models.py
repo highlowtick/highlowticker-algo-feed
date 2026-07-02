@@ -3,35 +3,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field, conint
-
-
-class AlgoEvent4(BaseModel):
-    algo_id: Optional[str] = None
-    order_id: Optional[str] = None
-    symbol: str
-    timestamp: str
-    type: Literal['ALGO_CANCEL']
+from pydantic import BaseModel, Field, RootModel, conint
 
 
-class AlgoEvent5(BaseModel):
-    algo_id: Optional[str] = None
-    open_positions: conint(ge=0)
-    realized: float
-    timestamp: str
-    type: Literal['ALGO_PNL']
-    unrealized: float
-
-
-class AlgoEvent6(BaseModel):
-    algo_id: Optional[str] = None
-    timestamp: str
-    type: Literal['ALGO_HEARTBEAT']
-
-
-class AlgoEvent7(BaseModel):
+class AlgoEvent1(BaseModel):
     algo_id: Optional[str] = None
     data: Optional[Any] = None
     message: Optional[str] = None
@@ -41,46 +18,11 @@ class AlgoEvent7(BaseModel):
     type: Literal['ALGO_CUSTOM']
 
 
-class AlgoEvent1(BaseModel):
-    algo_id: Optional[str] = None
-    fill_status: Optional[str] = None
-    order_id: Optional[str] = None
-    price: Optional[float] = None
-    side: Literal['BUY', 'SELL'] = Field(
+class AlgoEvent(RootModel[AlgoEvent1]):
+    root: AlgoEvent1 = Field(
         ...,
-        description='BUY or SELL. Matches JSON string `"BUY"` / `"SELL"` (case-sensitive).',
+        description='Tagged by the JSON `"type"` field. Only `ALGO_CUSTOM` is defined; any other (or unknown) type fails deserialization — the server logs it at `debug` and continues.',
     )
-    size: float
-    symbol: str
-    timestamp: str
-    type: Literal['ALGO_ORDER']
-
-
-class AlgoEvent2(BaseModel):
-    algo_id: Optional[str] = None
-    fill_price: float
-    order_id: Optional[str] = None
-    side: Literal['BUY', 'SELL'] = Field(
-        ...,
-        description='BUY or SELL. Matches JSON string `"BUY"` / `"SELL"` (case-sensitive).',
-    )
-    size: float
-    symbol: str
-    timestamp: str
-    type: Literal['ALGO_FILL']
-
-
-class AlgoEvent3(BaseModel):
-    algo_id: Optional[str] = None
-    reason: Optional[str] = ''
-    side: Literal['BUY', 'SELL'] = Field(
-        ...,
-        description='BUY or SELL. Matches JSON string `"BUY"` / `"SELL"` (case-sensitive).',
-    )
-    strength: float
-    symbol: str
-    timestamp: str
-    type: Literal['ALGO_SIGNAL']
 
 
 class TapeEvent(BaseModel):
@@ -161,17 +103,4 @@ class TapeEvent(BaseModel):
 
 class HighlowtickerAlgoFeedWireProtocol(BaseModel):
     egress: Optional[TapeEvent] = None
-    ingress: Optional[
-        Union[
-            AlgoEvent1,
-            AlgoEvent2,
-            AlgoEvent3,
-            AlgoEvent4,
-            AlgoEvent5,
-            AlgoEvent6,
-            AlgoEvent7,
-        ]
-    ] = Field(
-        None,
-        description='Tagged by the JSON `"type"` field. Unknown types fail deserialization — the server logs them at `debug` and continues.',
-    )
+    ingress: Optional[AlgoEvent] = None
