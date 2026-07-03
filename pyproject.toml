@@ -6,6 +6,11 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["websockets>=12", "pydantic>=2"]
 
+[project.urls]
+Homepage = "https://github.com/highlowtick/highlowticker-algo-feed"
+Source = "https://github.com/highlowtick/highlowticker-algo-feed"
+Issues = "https://github.com/highlowtick/highlowticker-algo-feed/issues"
+
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "datamodel-code-generator>=0.25"]
 
