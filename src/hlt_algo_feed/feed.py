@@ -126,3 +126,21 @@ class AlgoFeed:
             self._ws = None
             await asyncio.sleep(backoff)
             backoff = min(backoff * 2, 30.0)
+
+    async def notify_when(self, condition, action, *, once=None,
+                          watch=None, summary=False, reconnect=True) -> None:
+        """Declarative wrapper over run(): for each event where condition(ev) is
+        true (and, with once=, the key hasn't fired), call/await action(ev)."""
+        seen = set()
+
+        async def handler(ev):
+            if not condition(ev):
+                return
+            if once is not None:
+                key = once(ev)
+                if key in seen:
+                    return
+                seen.add(key)
+            await _maybe_await(action(ev))
+
+        await self.run(handler, watch=watch, summary=summary, reconnect=reconnect)
