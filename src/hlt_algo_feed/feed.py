@@ -7,6 +7,7 @@ import json
 from typing import AsyncIterator, Optional
 
 import websockets
+from websockets.exceptions import ConnectionClosed
 
 from .models import TapeEvent
 
@@ -100,3 +101,28 @@ class AlgoFeed:
         async for ev in self:
             if ev.event == "market_summary":
                 yield ev
+
+    async def run(self, handler, *, watch=None, summary=False, reconnect=True) -> None:
+        """Own the whole lifecycle: connect, (re)subscribe, iterate, dispatch,
+        reconnect. ``handler(ev)`` may be sync or async. Blocks until cancelled."""
+        backoff = 0.5
+        while True:
+            try:
+                if self._ws is None:
+                    await self._connect()
+                if watch is not None:
+                    await self.watch(watch)
+                if summary:
+                    await self.subscribe_summary(True)
+                backoff = 0.5  # reset after a healthy connect
+                async for ev in self:
+                    await _maybe_await(handler(ev))
+                # Stream ended (socket closed cleanly).
+                if not reconnect:
+                    return
+            except (ConnectionClosed, OSError):
+                if not reconnect:
+                    raise
+            self._ws = None
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 30.0)
