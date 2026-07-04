@@ -16,8 +16,10 @@ pip install highlowticker-algo-feed
 
 ## Requirements
 
-- HighLowTicker running with the algo feed enabled (Settings, Algo feed :7412).
+- [HighLowTicker](https://highlowtick.com) running with the algo feed enabled (Settings, Algo feed :7412).
 - Python 3.9 or newer.
+
+Wire-protocol reference and examples: <https://highlowtick.com/algo-feed.html>
 
 ## Usage
 
