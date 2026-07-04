@@ -1,14 +1,28 @@
 """Thin async wrapper over the algo feed websocket."""
 from __future__ import annotations
 
+import asyncio
+import inspect
 import json
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 import websockets
 
 from .models import TapeEvent
 
 DEFAULT_URL = "ws://127.0.0.1:7412"
+
+
+async def _maybe_await(result) -> None:
+    """Await the result if it is awaitable; otherwise do nothing (sync callback)."""
+    if inspect.isawaitable(result):
+        await result
+
+
+def event_matches(ev: TapeEvent, side: str) -> bool:
+    """True if the event is a new-high (side='high') or new-low (side='low'),
+    including the combined new_high_and_low."""
+    return side in ev.event
 
 
 def parse_frame(raw: str) -> Optional[TapeEvent]:
@@ -36,8 +50,11 @@ class AlgoFeed:
         self.url = url
         self._ws = None
 
-    async def __aenter__(self) -> "AlgoFeed":
+    async def _connect(self) -> None:
         self._ws = await websockets.connect(self.url)
+
+    async def __aenter__(self) -> "AlgoFeed":
+        await self._connect()
         return self
 
     async def __aexit__(self, *exc) -> None:
@@ -65,3 +82,21 @@ class AlgoFeed:
     async def subscribe_summary(self, enabled: bool = True) -> None:
         """Toggle the periodic market_summary stream on or off."""
         await self._ws.send(json.dumps(build_summary(enabled)))
+
+    async def new_highs(self) -> AsyncIterator[TapeEvent]:
+        """Yield only new-high events (new_high, new_high_and_low)."""
+        async for ev in self:
+            if event_matches(ev, "high"):
+                yield ev
+
+    async def new_lows(self) -> AsyncIterator[TapeEvent]:
+        """Yield only new-low events (new_low, new_high_and_low)."""
+        async for ev in self:
+            if event_matches(ev, "low"):
+                yield ev
+
+    async def summaries(self) -> AsyncIterator[TapeEvent]:
+        """Yield only market_summary events."""
+        async for ev in self:
+            if ev.event == "market_summary":
+                yield ev
