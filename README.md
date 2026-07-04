@@ -21,24 +21,61 @@ pip install highlowticker-algo-feed
 
 ## Usage
 
+Three levels of control — pick your altitude.
+
+### Quickstart (no async)
+
+```python
+from hlt_algo_feed import notify_when
+
+# "notify WHEN a symbol makes its 5th new high, THEN send an alert"
+notify_when(
+    when=lambda ev: ev.event == "new_high" and (ev.high_count or 0) >= 5,
+    then=lambda ev: print(f"🔼 {ev.symbol} · {ev.high_count} new highs"),
+    once=lambda ev: (ev.symbol, "high"),
+    watch=["AAPL", "MSFT"],
+)
+```
+
+`then` is any function you supply — post to Discord, Slack, Telegram, a webhook,
+email, or anything else. The package ships no messaging SDK and is channel-neutral.
+For a long-running strategy, use `run(handler, watch=[...])` with a callable that
+keeps its own state.
+
+### Async driver (already inside an event loop)
+
+```python
+import asyncio
+from hlt_algo_feed import AlgoFeed
+
+async def main():
+    await AlgoFeed().run(
+        lambda ev: print(ev.symbol, ev.event),
+        watch=["SPY"],
+    )   # owns connect + loop + reconnect
+
+asyncio.run(main())
+```
+
+### Raw / filtered iteration (full control)
+
 ```python
 import asyncio
 from hlt_algo_feed import AlgoFeed
 
 async def main():
     async with AlgoFeed() as feed:
-        await feed.watch(["AAPL", "MSFT"])   # get price_update ticks for these
-        await feed.subscribe_summary()       # get the periodic market_summary
-        async for ev in feed:
-            if ev.event == "new_high":
-                print(ev.symbol, ev.last_price)
+        await feed.watch(["AAPL"])
+        async for ev in feed.new_highs():   # or: async for ev in feed
+            print(ev.symbol, ev.high_count)
 
 asyncio.run(main())
 ```
 
 Every `ev` is a typed `TapeEvent` (a pydantic model). Unknown fields from a
 newer app build are ignored, so an older client keeps working against a newer
-binary.
+binary. See `examples/` for complete notify + strategy scripts, each shown
+bare-bones (no dependencies) and using this package.
 
 ## Note on the schema
 
